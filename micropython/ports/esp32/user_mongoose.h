@@ -27,7 +27,8 @@ static void mg_ev_http_handler(struct mg_connection *nc, int ev, void *p)
         mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
         log_printf("HTTP request from %s: %.*s %.*s\n", addr, (int)hm->method.len,
                hm->method.p, (int)hm->uri.len, hm->uri.p);
-               
+        
+        
         mg_serve_http(nc, hm, opts);
         break;
     }
@@ -54,7 +55,6 @@ static void mg_ev_http_handler(struct mg_connection *nc, int ev, void *p)
 static void mg_ev_dns_handler(struct mg_connection *nc, int ev, void *ev_data)
 {
     in_addr_t s_our_ip_addr = inet_addr((const char*)"192.168.4.1");
-    static char name[512];
     switch (ev)
     {
         case MG_DNS_MESSAGE:
@@ -64,6 +64,7 @@ static void mg_ev_dns_handler(struct mg_connection *nc, int ev, void *ev_data)
 
             for (int i = 0; i < msg->num_questions; i++)
             {
+                char name[64];
                 struct mg_dns_resource_record *rr = &msg->questions[i];
                 if (rr->rtype == MG_DNS_A_RECORD)
                 {

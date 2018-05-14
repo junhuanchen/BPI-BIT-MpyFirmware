@@ -163,11 +163,17 @@ bool MicroPythonCheckFile()
     if(NULL != (vfs))
     {
         FIL fp = { 0 };
-        FRESULT res = f_open(vfs, &fp, "./system.py", FA_READ | FA_CREATE_NEW);
+        FRESULT res = f_open(vfs, &fp, "./system.py", FA_READ | FA_WRITE | FA_CREATE_NEW);
         if (FR_OK == res) 
         {
-            f_close(&fp);
-            return true;
+            #define MpcfDefaultText "# This File Will Loop execute.\n"
+            UINT written = 0;
+            res = f_write(&fp, (void *)MpcfDefaultText, sizeof(MpcfDefaultText) - 1, &written);
+            if (FR_OK == res && written == (sizeof(MpcfDefaultText) - 1))
+            {
+                f_close(&fp);
+                return true;
+            }
         }
     }
     return false;
