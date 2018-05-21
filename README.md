@@ -1,4 +1,4 @@
-# Esp32-MicroPyhton
+factory # Esp32-MicroPyhton
 Fit For BpiBit And BpiUno32.
 
 # Config Guide
@@ -34,6 +34,6 @@ use `make` build micropython firmware.bin
 
 use `make deploy` flash and download firmware.bin
 
-use `make erase` erase and flash default bin
+use `make erase` erase and flash default factory bin
 
 more read Makefile not is makefile.
