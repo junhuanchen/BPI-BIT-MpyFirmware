@@ -51,6 +51,7 @@ static void mg_ev_http_handler(struct mg_connection *nc, int ev, void *p)
     }
 }
 
+#define BitHostName "bit.bpi"
 
 static void mg_ev_dns_handler(struct mg_connection *nc, int ev, void *ev_data)
 {
@@ -70,15 +71,15 @@ static void mg_ev_dns_handler(struct mg_connection *nc, int ev, void *ev_data)
                 {
                     mg_dns_uncompress_name(msg, &rr->name, name, sizeof(name) - 1);
 
-                    if (strcmp(name, "uno32.bpi") == 0)
+                    if (strcmp(name, BitHostName) == 0)
                     {
                         mg_dns_reply_record(&reply, rr, NULL, rr->rtype, 3600, &s_our_ip_addr, 4);
                     }
-                    else if (strcmp(name, "www.uno32.bpi") == 0)
+                    else if (strcmp(name, "www."BitHostName) == 0)
                     {
-                        mg_dns_reply_record(&reply, rr, NULL, MG_DNS_CNAME_RECORD, 3600, "uno32.bpi", strlen("uno32.bpi"));
+                        mg_dns_reply_record(&reply, rr, NULL, MG_DNS_CNAME_RECORD, 3600, BitHostName, strlen(BitHostName));
 
-                        mg_dns_reply_record(&reply, rr, "uno32.bpi", rr->rtype, 3600, &s_our_ip_addr, 4);
+                        mg_dns_reply_record(&reply, rr, BitHostName, rr->rtype, 3600, &s_our_ip_addr, 4);
                     }
                 }
             }
@@ -119,7 +120,7 @@ void mg_init()
 
     mg_mgr_init(&mgr_dns, NULL);
 
-    mg_set_nameserver(&mgr_dns, "uno32.bpi");
+    mg_set_nameserver(&mgr_dns, BitHostName);
 
     struct mg_connection *nc_dns = mg_bind(&mgr_dns, MG_PORT_DNS, mg_ev_dns_handler);
 
