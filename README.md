@@ -7,9 +7,9 @@ Fit For BpiBit And BpiUno32.
 
 ```
 
-export PATH=$PATH:/root/esp32/xtensa-esp32-elf/bin
+export PATH=$PATH:/root/BPI-BIT-MPyFirmware/xtensa-esp32-elf/bin
 
-export IDF_PATH=/root/esp32/esp-idf
+export IDF_PATH=/root/BPI-BIT-MPyFirmware/esp-idf
 
 ```
 
