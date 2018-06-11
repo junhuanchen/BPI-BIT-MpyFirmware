@@ -1,4 +1,4 @@
-#移植MicroPython到自定义的ESP32中
+# 移植MicroPython到自定义的ESP32中
 
 **一、了解现状**
 
