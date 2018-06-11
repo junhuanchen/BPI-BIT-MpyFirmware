@@ -150,7 +150,7 @@ void config_smartconfig_wifi(void)
     ESP_ERROR_CHECK(esp_wifi_deinit());
 }
 
-#define WIFI_AP_SSID "uno32"
+#define WIFI_AP_SSID "bit"
 
 void config_ap_sta_wifi(void)
 {
