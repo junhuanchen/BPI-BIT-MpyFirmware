@@ -7,7 +7,7 @@ In root/micropython/ports/esp32/makefile
 
 ```
 
-# set var into gedit ~/.profile and save
+# shell exec `gedit ~/.profile` and source `gedit ~/.profile`
 
 #export PATH=$PATH:/root/esp32/xtensa-esp32-elf/bin
 
