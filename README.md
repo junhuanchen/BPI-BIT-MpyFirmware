@@ -5,11 +5,17 @@ Fit For BpiBit And BpiUno32.
 
 # shell exec `gedit ~/.profile`
 
-#export PATH=$PATH:/root/esp32/xtensa-esp32-elf/bin
+```
 
-#export IDF_PATH=/root/esp32/esp-idf
+export PATH=$PATH:/root/esp32/xtensa-esp32-elf/bin
+
+export IDF_PATH=/root/esp32/esp-idf
+
+```
 
 #  and source `gedit ~/.profile`
+
+close shell console.
 
 # into `/micropython/ports/esp32`
 
