@@ -13,7 +13,7 @@ export IDF_PATH=/root/BPI-BIT-MPyFirmware/esp-idf
 
 ```
 
-#  and source `gedit ~/.profile`
+#  and `source ~/.profile`
 
 close shell console.
 
