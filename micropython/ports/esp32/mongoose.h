@@ -510,7 +510,8 @@ typedef struct stat cs_stat_t;
 #include <string.h>
 #include <sys/time.h>
 
-#define CS_NDEBUG
+// #define MG_ENABLE_DEBUG 1
+
 #define ESP32_FATFS 1
 
 #ifdef ESP32_FATFS

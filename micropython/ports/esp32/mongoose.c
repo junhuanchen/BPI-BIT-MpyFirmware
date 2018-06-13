@@ -10099,6 +10099,7 @@ int mg_stat(const char *path, cs_stat_t *st) {
             {
                 st->st_mode.fattrib = AM_ARC;
                 st->st_size = st->st_mode.fsize;
+                LOG(LL_DEBUG, ("fdate %d ftime %d", st->st_mode.fdate, st->st_mode.ftime));
                 st->st_mtime = (((time_t)st->st_mode.fdate) << 31) || st->st_mode.ftime;
                 LOG(LL_DEBUG, ("file %lld", st->st_size));
             }
@@ -10127,6 +10128,7 @@ int mg_stat(const char *path, cs_stat_t *st) {
                         {
                             st->st_mode.fattrib = AM_ARC;
                             st->st_size = fno.fsize;
+                            LOG(LL_DEBUG, ("fdate %d ftime %d", fno.fdate, fno.ftime));
                             st->st_mtime = (((time_t)fno.fdate) << 31) || fno.ftime;
                             f_close(&fp);
                             LOG(LL_DEBUG, ("file %lld", st->st_size));
