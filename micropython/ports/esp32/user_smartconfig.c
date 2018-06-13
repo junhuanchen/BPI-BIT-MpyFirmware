@@ -1,4 +1,5 @@
 
+#include "user_smartconfig.h"
 #include "esp_wifi.h"
 #include "esp_event_loop.h"
 #include "esp_log.h"
@@ -150,8 +151,6 @@ void config_smartconfig_wifi(void)
     ESP_ERROR_CHECK(esp_wifi_deinit());
 }
 
-#define WIFI_AP_SSID "bit"
-
 void config_ap_sta_wifi(void)
 {
     xEventGroupClearBits(wifi_event_group, SMARTCONFIG_BIT);
@@ -223,8 +222,6 @@ bool wifi_config_write(wifi_config_t *config)
     return res;
 }
 
-#define CONFIG_KEY 27
-
 void config_default_wifi()
 {
     tcpip_adapter_init();
@@ -235,8 +232,8 @@ void config_default_wifi()
 
     bool spiffs = wifi_config_init(), config = false;
     
-    gpio_set_direction(CONFIG_KEY, GPIO_MODE_INPUT);
-    if (0 == gpio_get_level(CONFIG_KEY) || (spiffs && false == (config = wifi_config_read(&wifi_sta_config))))
+    gpio_set_direction(SMART_CONFIG_KEY, GPIO_MODE_INPUT);
+    if (0 == gpio_get_level(SMART_CONFIG_KEY) || (spiffs && false == (config = wifi_config_read(&wifi_sta_config))))
     {
         config_smartconfig_wifi();
         config = true;
@@ -263,6 +260,6 @@ void config_default_wifi()
     }
     else
     {
-        printf("press CONFIG_KEY : %d and reset to SmartConfig please.\n", CONFIG_KEY);
+        printf("press SMART_CONFIG_KEY : %d and reset to SmartConfig please.\n", SMART_CONFIG_KEY);
     }    
 }

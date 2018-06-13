@@ -1,6 +1,8 @@
 
 #include "mongoose.h"
 
+#define BitHostName "bit.bpi"
+
 #define MG_PORT_HTTP "80"
 #define MG_PORT_DNS "udp://:53"
 
@@ -50,8 +52,6 @@ static void mg_ev_http_handler(struct mg_connection *nc, int ev, void *p)
         break;
     }
 }
-
-#define BitHostName "bit.bpi"
 
 static void mg_ev_dns_handler(struct mg_connection *nc, int ev, void *ev_data)
 {
