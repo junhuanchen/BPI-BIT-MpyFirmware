@@ -32,7 +32,7 @@ git hash of this version can be found by running `make` without a configured
 
     $ git clone https://github.com/espressif/esp-idf.git
     $ git checkout <Current supported ESP-IDF commit hash>
-    $ git submodule update --recursive
+    $ git submodule update --init --recursive
 
 The binary toolchain (binutils, gcc, etc.) can be installed using the following
 guides:
@@ -78,6 +78,7 @@ ESPIDF = <path to root of esp-idf repository>
 #FLASH_MODE = qio
 #FLASH_SIZE = 4MB
 #CROSS_COMPILE = xtensa-esp32-elf-
+#CONFIG_SPIRAM_SUPPORT = 1
 
 include Makefile
 ```

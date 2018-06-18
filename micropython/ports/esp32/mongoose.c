@@ -700,32 +700,40 @@ FATFS *mongoose_vfs; // import fs var
 #define opendir mg_opendir
 DIR *mg_opendir(const char *path) {
     DIR *dir = malloc(sizeof(DIR));
+    memset(dir, 0, sizeof(DIR));
     if(NULL != dir)
     {
+        LOG(LL_INFO, ("mg_opendir dir %p", dir));
         if(FR_OK == f_opendir(mongoose_vfs, dir, path))
         {
+            LOG(LL_INFO, ("f_opendir"));
             return dir;
         }
     }
+    free(dir);
     return NULL;
 }
 
 struct dirent
 {
-    char d_name[14];
+    char d_name[16];
 };
 
 #define readdir mg_readdir
 struct dirent *mg_readdir(DIR *dir) {
+    LOG(LL_INFO, ("readdir dir %p", dir));
     static struct dirent result;
     FILINFO fno;
     FRESULT res = f_readdir(dir, &fno);
-    if((res == FR_OK && fno.fname[0] != 0)) 
+    LOG(LL_INFO, ("f_readdir res %d", res == FR_OK));
+    if(res == FR_OK && fno.fname[0] != 0) 
     {
         memset(&result, 0, sizeof(result));
-        memcpy(result.d_name, fno.fname, sizeof(fno.fname)); // only used d_name
+        memcpy(result.d_name, fno.fname, strlen(fno.fname)); // only used d_name
+        LOG(LL_INFO, ("res %d fno.fname %s dir %p\n", res, fno.fname, dir));
         return &result;
     }
+    LOG(LL_INFO, ("fail"));
     return NULL;
 }
 
@@ -7198,7 +7206,9 @@ static int mg_is_file_hidden(const char *path,
                              int exclude_specials) {
   const char *p1 = opts->per_directory_auth_file;
   const char *p2 = opts->hidden_file_pattern;
-
+  
+  LOG(LL_DEBUG, ("p1 %s p2 %s path %s", p1, p2, path));
+  
   /* Strip directory path from the file name */
   const char *pdir = strrchr(path, DIRSEP);
   if (pdir != NULL) {
@@ -7484,24 +7494,28 @@ static void mg_scan_directory(struct mg_connection *nc, const char *dir,
   struct dirent *dp;
   DIR *dirp;
 
-  LOG(LL_DEBUG, ("%p [%s]", nc, dir));
-  if ((dirp = (opendir(dir))) != NULL) {
-    while ((dp = readdir(dirp)) != NULL) {
-      /* Do not show current dir and hidden files */
-      if (mg_is_file_hidden((const char *) dp->d_name, opts, 1)) {
-        continue;
-      }
-      snprintf(path, sizeof(path), "%s/%s", dir, dp->d_name);
-      LOG(LL_DEBUG, ("readdir %s/%s path %s\n", dir, dp->d_name, path));
-      if (mg_stat(path, &st) == 0) {
-        func(nc, (const char *) dp->d_name, &st);
-        // func(nc, (const char *) path, &st);
-      }
+    LOG(LL_DEBUG, ("%p [%s]", nc, dir));
+    if ((dirp = opendir(dir)) != NULL) {
+        LOG(LL_DEBUG, ("opendir dirp %p\n", dirp));
+        while ((dp = readdir(dirp)) != NULL) {
+            LOG(LL_DEBUG, ("readdir %s/%s\n", dir, dp->d_name));
+            /* Do not show current dir and hidden files
+            if (mg_is_file_hidden((const char *) dp->d_name, opts, 1)) {
+                continue;
+            }
+            */
+            snprintf(path, sizeof(path), "%s/%s", dir, dp->d_name);
+            LOG(LL_DEBUG, ("path %s\n", path));
+            if (mg_stat(path, &st) == 0) {
+                func(nc, (const char *) dp->d_name, &st);
+                // func(nc, (const char *) path, &st);
+            }
+        }
+        LOG(LL_DEBUG, ("closedir"));
+        closedir(dirp);
+    } else {
+        LOG(LL_DEBUG, ("%p opendir(%s) -> %d", nc, dir, mg_get_errno()));
     }
-    closedir(dirp);
-  } else {
-    LOG(LL_DEBUG, ("%p opendir(%s) -> %d", nc, dir, mg_get_errno()));
-  }
 }
 
 static void mg_send_directory_listing(struct mg_connection *nc, const char *dir,

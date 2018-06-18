@@ -85,6 +85,15 @@ static void tcpip_adapter_api_cb(void* api_msg)
     return;
 }
 
+static void tcpip_adapter_dhcps_cb(u8_t client_ip[4])
+{
+    ESP_LOGI(TAG,"softAP assign IP to station,IP is: %d.%d.%d.%d",
+                client_ip[0],client_ip[1],client_ip[2],client_ip[3]);
+    system_event_t evt;
+    evt.event_id = SYSTEM_EVENT_AP_STAIPASSIGNED;
+    esp_event_send(&evt);
+}
+
 void tcpip_adapter_init(void)
 {
     int ret;
@@ -181,6 +190,8 @@ esp_err_t tcpip_adapter_start(tcpip_adapter_if_t tcpip_if, uint8_t *mac, tcpip_a
         netif_set_up(esp_netif[tcpip_if]);
 
         if (dhcps_status == TCPIP_ADAPTER_DHCP_INIT) {
+            dhcps_set_new_lease_cb(tcpip_adapter_dhcps_cb);
+            
             dhcps_start(esp_netif[tcpip_if], ip_info->ip);
 
             ESP_LOGD(TAG, "dhcp server start:(ip: " IPSTR ", mask: " IPSTR ", gw: " IPSTR ")",
@@ -408,19 +419,25 @@ esp_err_t tcpip_adapter_set_ip_info(tcpip_adapter_if_t tcpip_if, tcpip_adapter_i
 
     if (p_netif != NULL && netif_is_up(p_netif)) {
         netif_set_addr(p_netif, &ip_info->ip, &ip_info->netmask, &ip_info->gw);
-        if (!(ip4_addr_isany_val(ip_info->ip) || ip4_addr_isany_val(ip_info->netmask) || ip4_addr_isany_val(ip_info->gw))) {
-            system_event_t evt;
-            evt.event_id = SYSTEM_EVENT_STA_GOT_IP;
-            evt.event_info.got_ip.ip_changed = false;
+        if (tcpip_if == TCPIP_ADAPTER_IF_STA || tcpip_if == TCPIP_ADAPTER_IF_ETH) {
+            if (!(ip4_addr_isany_val(ip_info->ip) || ip4_addr_isany_val(ip_info->netmask) || ip4_addr_isany_val(ip_info->gw))) {
+                system_event_t evt;
+                if (tcpip_if == TCPIP_ADAPTER_IF_STA) {
+                    evt.event_id = SYSTEM_EVENT_STA_GOT_IP;
+                } else if (tcpip_if == TCPIP_ADAPTER_IF_ETH) {
+                    evt.event_id = SYSTEM_EVENT_ETH_GOT_IP;
+                }
+                evt.event_info.got_ip.ip_changed = false;
 
-            if (memcmp(ip_info, &esp_ip_old[tcpip_if], sizeof(tcpip_adapter_ip_info_t))) {
-                evt.event_info.got_ip.ip_changed = true;
+                if (memcmp(ip_info, &esp_ip_old[tcpip_if], sizeof(tcpip_adapter_ip_info_t))) {
+                    evt.event_info.got_ip.ip_changed = true;
+                }
+
+                memcpy(&evt.event_info.got_ip.ip_info, ip_info, sizeof(tcpip_adapter_ip_info_t));
+                memcpy(&esp_ip_old[tcpip_if], ip_info, sizeof(tcpip_adapter_ip_info_t));
+                esp_event_send(&evt);
+                ESP_LOGD(TAG, "if%d tcpip adapter set static ip: ip changed=%d", tcpip_if, evt.event_info.got_ip.ip_changed);
             }
-
-            memcpy(&evt.event_info.got_ip.ip_info, ip_info, sizeof(tcpip_adapter_ip_info_t));
-            memcpy(&esp_ip_old[tcpip_if], ip_info, sizeof(tcpip_adapter_ip_info_t));
-            esp_event_send(&evt);
-            ESP_LOGD(TAG, "if%d tcpip adapter set static ip: ip changed=%d", tcpip_if, evt.event_info.got_ip.ip_changed);
         }
     }
 

@@ -22,21 +22,20 @@
  *
  ******************************************************************************/
 
-#include "bt_target.h"
+#include "common/bt_target.h"
 
 #if defined(GATTC_INCLUDED) && (GATTC_INCLUDED == TRUE)
 
 #include <string.h>
 
-#include "bdaddr.h"
+#include "device/bdaddr.h"
 // #include "btif/include/btif_util.h"
-#include "utl.h"
-#include "bta_sys.h"
+#include "bta/utl.h"
+#include "bta/bta_sys.h"
 #include "bta_gattc_int.h"
-#include "l2c_api.h"
-#include "allocator.h"
+#include "stack/l2c_api.h"
+#include "osi/allocator.h"
 
-#define LOG_TAG "bt_bta_gattc"
 /*****************************************************************************
 **  Constants
 *****************************************************************************/
@@ -709,6 +708,7 @@ void bta_gattc_send_open_cback( tBTA_GATTC_RCB *p_clreg, tBTA_GATT_STATUS status
                                 BD_ADDR remote_bda, UINT16 conn_id,
                                 tBTA_TRANSPORT transport, UINT16 mtu)
 {
+
     tBTA_GATTC      cb_data;
 
     if (p_clreg->p_cback) {
@@ -862,10 +862,6 @@ BOOLEAN bta_gattc_conn_dealloc(BD_ADDR remote_bda)
     if (p_conn != NULL) {
         p_conn->in_use = FALSE;
         memset(p_conn->remote_bda, 0, BD_ADDR_LEN);
-        osi_mutex_lock(&bta_gattc_cb.write_ccc_mutex, OSI_MUTEX_MAX_TIMEOUT);
-        bta_sys_free_timer(&p_conn->service_change_ccc_timer);
-        p_conn->ccc_timer_used = FALSE;
-        osi_mutex_unlock(&bta_gattc_cb.write_ccc_mutex);
         return TRUE;
     }
     return FALSE;
@@ -966,7 +962,7 @@ void bta_to_btif_uuid(bt_uuid_t *p_dest, tBT_UUID *p_src)
             break;
 
         default:
-            LOG_ERROR("%s: Unknown UUID length %d!", __FUNCTION__, p_src->len);
+            APPL_TRACE_ERROR("%s: Unknown UUID length %d!", __FUNCTION__, p_src->len);
             break;
     }
 }

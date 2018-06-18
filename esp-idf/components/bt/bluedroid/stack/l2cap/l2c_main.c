@@ -26,15 +26,15 @@
 #include <string.h>
 //#include <stdio.h>
 
-#include "controller.h"
+#include "device/controller.h"
 //#include "btcore/include/counter.h"
-#include "bt_target.h"
+#include "common/bt_target.h"
 #include "btm_int.h"
-#include "btu.h"
-#include "hcimsgs.h"
-#include "l2c_api.h"
+#include "stack/btu.h"
+#include "stack/hcimsgs.h"
+#include "stack/l2c_api.h"
 #include "l2c_int.h"
-#include "l2cdefs.h"
+#include "stack/l2cdefs.h"
 //#include "osi/include/log.h"
 
 /********************************************************************************/
@@ -870,7 +870,7 @@ void l2c_init (void)
 
     l2cb.rcv_pending_q = list_new(NULL);
     if (l2cb.rcv_pending_q == NULL) {
-        LOG_ERROR("%s unable to allocate memory for link layer control block", __func__);
+        L2CAP_TRACE_ERROR("%s unable to allocate memory for link layer control block", __func__);
     }
 }
 

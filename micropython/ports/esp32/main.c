@@ -28,14 +28,16 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"      
+#include "freertos/semphr.h"    
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
 #include "esp_task.h"
 #include "soc/cpu.h"
+#include "esp_log.h"
 
 #include "py/stackctrl.h"
 #include "py/nlr.h"
@@ -48,6 +50,7 @@
 #include "lib/utils/pyexec.h"
 #include "uart.h"
 #include "modmachine.h"
+#include "modnetwork.h"
 #include "mpthreadport.h"
 
 #include "lib/oofatfs/ff.h"
@@ -67,7 +70,7 @@ int ff_del_syncobj(_SYNC_t sobj)
 
 int ff_req_grant(_SYNC_t sobj)
 {
-    return (int)(xSemaphoreTake(sobj, 2000) == pdTRUE);
+    return (int)(xSemaphoreTake(sobj, 10000) == pdTRUE);
 }
 
 void ff_rel_grant(_SYNC_t sobj)
@@ -88,72 +91,72 @@ STATIC FATFS *lookup_path(const TCHAR **path)
 
 static void test_fat()
 {
-    const char * path = "/flashbdev";
-    FATFS *vfs = lookup_path(&path);
-    FRESULT res;
-    if(NULL != (vfs))
-    {
-        FF_DIR dir;
-        res = f_opendir(vfs, &dir, ".");
-        printf("f_opendir %d\n", res);
-        if (FR_OK == res)
-        {
-            for (;;) {
-                FILINFO fno;
-                FRESULT res = f_readdir(&dir, &fno);
-                printf("f_readdir %d\n", res);
-                char *fn = fno.fname;
-                if (res != FR_OK || fn[0] == 0) 
-                {
-                    // stop on error or end of dir
-                    break;
-                }
-                else
-                {
-                    printf("fn %.*s\n", strlen(fn), fn);
-	                if (fno.fattrib & AM_DIR) 
-	                {
-		                // dir
-                        printf("dir\n");
-                    } else 
-                    {
-	                    // file
-		                printf("file\n");
-	                }
-                    printf("size %d \n", fno.fsize);
-                }
-            }
-            
-            FIL fp = { 0 };
-            
-            res = f_open(vfs, &fp, "./main.py", FA_WRITE | FA_CREATE_NEW);
-            printf("write f_open res %d\n", res);
-            if (FR_OK == res) 
-            {
-                f_close(&fp);
-            }
-            
-            res = f_open(vfs, &fp, "./main.py", FA_READ);
-            printf("read vfs %p f_open res %d\n", vfs, res);
-            if (FR_OK == res) 
-            {
-                printf("obj %p flag %hhd err %hhd fptr %d clust %d sect %d\n", \
-                    &fp.obj, fp.flag, fp.err, fp.fptr, fp.clust, fp.sect);
-                    
-                printf("f_read p %p\n", f_read);
-                UINT n = 0;
-                char buf[128];
-                res = f_read(&fp, (void *)buf, 128, &n);
-                printf("f_read res %d\n", res);
-                if (res == FR_OK) 
-                {
-                    ets_printf("f_read n %d buf %s\n", n, buf);
-                }
-                f_close(&fp);
-            }
-            f_closedir(&dir);
-        }
-    }
+	const char * path = "/flashbdev";
+	FATFS *vfs = lookup_path(&path);
+	FRESULT res;
+	if(NULL != (vfs))
+	{
+		FF_DIR dir;
+		res = f_opendir(vfs, &dir, ".");
+		printf("f_opendir %d\n", res);
+		if (FR_OK == res)
+		{
+			for (;;) {
+				FILINFO fno;
+				FRESULT res = f_readdir(&dir, &fno);
+				printf("f_readdir %d\n", res);
+				char *fn = fno.fname;
+				if (res != FR_OK || fn[0] == 0) 
+				{
+					// stop on error or end of dir
+					break;
+				}
+				else
+				{
+					printf("fn %.*s\n", strlen(fn), fn);
+					if (fno.fattrib & AM_DIR) 
+					{
+						// dir
+						printf("dir\n");
+					} else 
+					{
+						// file
+						printf("file\n");
+					}
+					printf("size %d \n", fno.fsize);
+				}
+			}
+			
+			FIL fp = { 0 };
+			
+			res = f_open(vfs, &fp, "./main.py", FA_WRITE | FA_CREATE_NEW);
+			printf("write f_open res %d\n", res);
+			if (FR_OK == res) 
+			{
+				f_close(&fp);
+			}
+			
+			res = f_open(vfs, &fp, "./main.py", FA_READ);
+			printf("read vfs %p f_open res %d\n", vfs, res);
+			if (FR_OK == res) 
+			{
+				printf("obj %p flag %hhd err %hhd fptr %d clust %d sect %d\n", \
+					&fp.obj, fp.flag, fp.err, fp.fptr, fp.clust, fp.sect);
+					
+				printf("f_read p %p\n", f_read);
+				UINT n = 0;
+				char buf[128];
+				res = f_read(&fp, (void *)buf, 128, &n);
+				printf("f_read res %d\n", res);
+				if (res == FR_OK) 
+				{
+					ets_printf("f_read n %d buf %s\n", n, buf);
+				}
+				f_close(&fp);
+			}
+			f_closedir(&dir);
+		}
+	}
 }
 
 bool MicroPythonCheckFile()
@@ -164,7 +167,7 @@ bool MicroPythonCheckFile()
     {
         FIL fp = { 0 };
         FRESULT res = f_open(vfs, &fp, "./system.py", FA_READ | FA_WRITE | FA_CREATE_NEW);
-        if (FR_OK == res) 
+        if (FR_OK == res)
         {
             #define MpcfDefaultText "# This File Will Loop execute.\n"
             UINT written = 0;
@@ -184,7 +187,7 @@ extern FATFS *mongoose_vfs;
 
 #include "user_smartconfig.h"
 
-#define SAFE_KEY 27 // 35
+#define SAFE_KEY 27 // 34
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
@@ -193,6 +196,11 @@ extern FATFS *mongoose_vfs;
 
 STATIC StaticTask_t mp_task_tcb;
 STATIC StackType_t mp_task_stack[MP_TASK_STACK_LEN] __attribute__((aligned (8)));
+
+int vprintf_null(const char *format, va_list ap) {
+    // do nothing: this is used as a log target during raw repl mode
+    return 0;
+}
 
 void mp_task(void *pvParameter) {
     volatile uint32_t sp = (uint32_t)get_sp();
@@ -219,10 +227,16 @@ soft_reset:
 
     // initialise peripherals
     machine_pins_init();
-    
+
     // run boot-up scripts
     pyexec_frozen_module("_boot.py");
     pyexec_file("boot.py");
+    // if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
+    //     pyexec_file("main.py");
+    // }
+
+    
+    // test_fat();
     
     const char * path = "/flashbdev";
     do
@@ -250,36 +264,19 @@ soft_reset:
         mg_loop();
         
         pyexec_file("system.py");
-        
-        /*
-        if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) 
-        {
-            pyexec_file("main.py");
-        }
-        */
-        /*
-        for (;;) {
-            if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
-                if (pyexec_raw_repl() != 0) {
-                    break;
-                }
-            } else {
-                if (pyexec_friendly_repl() != 0) {
-                    break;
-                }
-            }
-        }
-        */
     }
-    
+
     #if MICROPY_PY_THREAD
     mp_thread_deinit();
     #endif
+
+    gc_sweep_all();
 
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
 
     // deinitialise peripherals
     machine_pins_deinit();
+    usocket_events_deinit();
 
     mp_deinit();
     fflush(stdout);
@@ -298,10 +295,7 @@ void app_main(void) {
     
     mg_init();
     
-    xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, &mp_task_stack[0], &mp_task_tcb, tskNO_AFFINITY);//tskNO_AFFINITY);
-    
-    // xTaskCreateStatic(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY + 1, &mp_task_stack[0], &mp_task_tcb);//tskNO_AFFINITY);
-    
+    xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, &mp_task_stack[0], &mp_task_tcb, tskNO_AFFINITY);
 }
 
 void nlr_jump_fail(void *val) {
@@ -313,4 +307,3 @@ void nlr_jump_fail(void *val) {
 void mbedtls_debug_set_threshold(int threshold) {
     (void)threshold;
 }
-

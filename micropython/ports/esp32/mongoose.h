@@ -4077,7 +4077,7 @@ extern "C" {
 #ifdef PATH_MAX
 #define MG_MAX_PATH PATH_MAX
 #else
-#define MG_MAX_PATH 256
+#define MG_MAX_PATH 16
 #endif
 #endif
 

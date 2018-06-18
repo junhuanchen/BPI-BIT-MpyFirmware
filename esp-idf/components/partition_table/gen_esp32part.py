@@ -35,6 +35,7 @@ MD5_PARTITION_BEGIN = b"\xEB\xEB" + b"\xFF" * 14 # The first 2 bytes are like ma
 __version__ = '1.0'
 
 quiet = False
+md5sum = True
 
 def status(msg):
     """ Print status message to stderr """
@@ -113,6 +114,16 @@ class PartitionTable(list):
                 raise InputError("Partition at 0x%x overlaps 0x%x-0x%x" % (p.offset, last.offset, last.offset+last.size-1))
             last = p
 
+    def flash_size(self):
+        """ Return the size that partitions will occupy in flash
+            (ie the offset the last partition ends at)
+        """
+        try:
+            last = sorted(self, reverse=True)[0]
+        except IndexError:
+            return 0  # empty table!
+        return last.offset + last.size
+
     @classmethod
     def from_binary(cls, b):
         md5 = hashlib.md5();
@@ -123,7 +134,7 @@ class PartitionTable(list):
                 raise InputError("Partition table length must be a multiple of 32 bytes")
             if data == b'\xFF'*32:
                 return result  # got end marker
-            if data[:2] == MD5_PARTITION_BEGIN[:2]: #check only the magic number part
+            if md5sum and data[:2] == MD5_PARTITION_BEGIN[:2]: #check only the magic number part
                 if data[16:] == md5.digest():
                     continue # the next iteration will check for the end marker
                 else:
@@ -135,7 +146,8 @@ class PartitionTable(list):
 
     def to_binary(self):
         result = b"".join(e.to_binary() for e in self)
-        result += MD5_PARTITION_BEGIN + hashlib.md5(result).digest()
+        if md5sum:
+            result += MD5_PARTITION_BEGIN + hashlib.md5(result).digest()
         if len(result )>= MAX_PARTITION_LENGTH:
             raise InputError("Binary partition table length (%d) longer than max" % len(result))
         result += b"\xFF" * (MAX_PARTITION_LENGTH - len(result))  # pad the sector, for signing
@@ -237,6 +249,18 @@ class PartitionDefinition(object):
 
     def __cmp__(self, other):
         return self.offset - other.offset
+
+    def __lt__(self, other):
+        return self.offset < other.offset
+
+    def __gt__(self, other):
+        return self.offset > other.offset
+
+    def __le__(self, other):
+        return self.offset <= other.offset
+
+    def __ge__(self, other):
+        return self.offset >= other.offset
 
     def parse_type(self, strval):
         if strval == "":
@@ -345,8 +369,12 @@ def parse_int(v, keywords={}):
 
 def main():
     global quiet
+    global md5sum
     parser = argparse.ArgumentParser(description='ESP32 partition table utility')
 
+    parser.add_argument('--flash-size', help='Optional flash size limit, checks partition table fits in flash',
+                        nargs='?', choices=[ '1MB', '2MB', '4MB', '8MB', '16MB' ])
+    parser.add_argument('--disable-md5sum', help='Disable md5 checksum for the partition table', default=False, action='store_true')
     parser.add_argument('--verify', '-v', help='Verify partition table fields', default=True, action='store_false')
     parser.add_argument('--quiet', '-q', help="Don't print status messages to stderr", action='store_true')
 
@@ -358,6 +386,7 @@ def main():
     args = parser.parse_args()
 
     quiet = args.quiet
+    md5sum = not args.disable_md5sum
     input = args.input.read()
     input_is_binary = input[0:2] == PartitionDefinition.MAGIC_BYTES
     if input_is_binary:
@@ -371,6 +400,14 @@ def main():
     if args.verify:
         status("Verifying table...")
         table.verify()
+
+    if args.flash_size:
+        size_mb = int(args.flash_size.replace("MB", ""))
+        size = size_mb * 1024 * 1024  # flash memory uses honest megabytes!
+        table_size = table.flash_size()
+        if size < table_size:
+            raise InputError("Partitions defined in '%s' occupy %.1fMB of flash (%d bytes) which does not fit in configured flash size %dMB. Change the flash size in menuconfig under the 'Serial Flasher Config' menu." %
+                             (args.input.name, table_size / 1024.0 / 1024.0, table_size, size_mb))
 
     if input_is_binary:
         output = table.to_csv()

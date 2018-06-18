@@ -441,10 +441,10 @@ bool wifi_config_read(wifi_config_t *config)
     FILE* f = fopen(SMART_CONFIG_FILE, "rb");
     if(f)
     {
-        // puts("fopen");
+        puts("fopen");
         if(1 == fread(config, sizeof(*config), 1, f))
         {
-            // puts("fread");
+            puts("fread");
             res = true;
         }
         fclose(f);
@@ -458,10 +458,10 @@ bool wifi_config_write(wifi_config_t *config)
     FILE* f = fopen(SMART_CONFIG_FILE, "wb");
     if(f)
     {
-        // puts("fopen");
+        puts("fopen");
         if(1 == fwrite(config, sizeof(*config), 1, f))
         {
-            // puts("fwrite");
+            puts("fwrite");
             res = true;
         }
         fclose(f);

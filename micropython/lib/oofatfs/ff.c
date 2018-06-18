@@ -46,14 +46,14 @@
 
 /* Reentrancy related */
 #if _FS_REENTRANT
-    #if _USE_LFN == 1
-        #error Static LFN work area cannot be used at thread-safe configuration
-    #endif
-    #define ENTER_FF(fs)        { if (!lock_fs(fs)) return FR_TIMEOUT; }
-    #define LEAVE_FF(fs, res)   { unlock_fs(fs, res); return res; }
+#if _USE_LFN == 1
+#error Static LFN work area cannot be used at thread-safe configuration
+#endif
+#define ENTER_FF(fs)        { if (!lock_fs(fs)) return FR_TIMEOUT; }
+#define LEAVE_FF(fs, res)   { unlock_fs(fs, res); return res; }
 #else
-    #define ENTER_FF(fs)
-    #define LEAVE_FF(fs, res)   return res
+#define ENTER_FF(fs)
+#define LEAVE_FF(fs, res)   return res
 #endif
 
 
@@ -3348,13 +3348,15 @@ FRESULT f_read (
     FSIZE_t remain;
     UINT rcnt, cc, csect;
     BYTE *rbuff = (BYTE*)buff;
+
+
     *br = 0;    /* Clear read byte counter */
     res = validate(&fp->obj, &fs);              /* Check validity of the file object */
     if (res != FR_OK || (res = (FRESULT)fp->err) != FR_OK) LEAVE_FF(fs, res);   /* Check validity */
     if (!(fp->flag & FA_READ)) LEAVE_FF(fs, FR_DENIED); /* Check access mode */
     remain = fp->obj.objsize - fp->fptr;
     if (btr > remain) btr = (UINT)remain;       /* Truncate btr by remaining bytes */
-    
+
     for ( ;  btr;                               /* Repeat until all data read */
         rbuff += rcnt, fp->fptr += rcnt, *br += rcnt, btr -= rcnt) {
         if (fp->fptr % SS(fs) == 0) {           /* On the sector boundary? */

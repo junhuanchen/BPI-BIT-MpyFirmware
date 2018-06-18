@@ -8,7 +8,7 @@
 
 struct mg_serve_http_opts opts;
 
-#define log_printf(arg, ...)/* printf// */ // printf
+#define log_printf(arg, ...) /* printf */
 
 static void mg_ev_http_handler(struct mg_connection *nc, int ev, void *p)
 {
@@ -16,7 +16,6 @@ static void mg_ev_http_handler(struct mg_connection *nc, int ev, void *p)
     {
     case MG_EV_ACCEPT:
     {
-        printf("webdav working...\n");
         char addr[32];
         mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP | MG_SOCK_STRINGIFY_PORT);
         log_printf("Connection %p from %s\n", nc, addr);
@@ -37,6 +36,7 @@ static void mg_ev_http_handler(struct mg_connection *nc, int ev, void *p)
     case MG_EV_CLOSE:
     {
         log_printf("Connection %p closed\n", nc);
+        printf("\nwebdav working...");
         break;
     }
     case MG_EV_POLL:

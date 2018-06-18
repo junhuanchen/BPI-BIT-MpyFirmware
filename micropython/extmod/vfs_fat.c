@@ -47,7 +47,8 @@
 
 #define mp_obj_fat_vfs_t fs_user_mount_t
 
-mp_import_stat_t fat_vfs_import_stat(fs_user_mount_t *vfs, const char *path) {
+STATIC mp_import_stat_t fat_vfs_import_stat(void *vfs_in, const char *path) {
+    fs_user_mount_t *vfs = vfs_in;
     FILINFO fno;
     assert(vfs != NULL);
     FRESULT res = f_stat(&vfs->fatfs, path, &fno);
@@ -66,7 +67,6 @@ STATIC mp_obj_t fat_vfs_make_new(const mp_obj_type_t *type, size_t n_args, size_
 
     // create new object
     fs_user_mount_t *vfs = m_new_obj(fs_user_mount_t);
-
     vfs->base.type = type;
     vfs->flags = FSUSER_FREE_OBJ;
     vfs->fatfs.drv = vfs;
@@ -85,7 +85,6 @@ STATIC mp_obj_t fat_vfs_make_new(const mp_obj_type_t *type, size_t n_args, size_
     }
 
     // mount the block device so the VFS methods can be used
-
     FRESULT res = f_mount(&vfs->fatfs);
     if (res == FR_NO_FILESYSTEM) {
         // don't error out if no filesystem, to let mkfs()/mount() create one if wanted
@@ -160,7 +159,7 @@ STATIC mp_obj_t mp_vfs_fat_ilistdir_it_iternext(mp_obj_t self_in) {
         }
         t->items[2] = MP_OBJ_NEW_SMALL_INT(0); // no inode number
         t->items[3] = mp_obj_new_int_from_uint(fno.fsize);
-        
+
         return MP_OBJ_FROM_PTR(t);
     }
 
@@ -423,11 +422,17 @@ STATIC const mp_rom_map_elem_t fat_vfs_locals_dict_table[] = {
 };
 STATIC MP_DEFINE_CONST_DICT(fat_vfs_locals_dict, fat_vfs_locals_dict_table);
 
+STATIC const mp_vfs_proto_t fat_vfs_proto = {
+    .import_stat = fat_vfs_import_stat,
+};
+
 const mp_obj_type_t mp_fat_vfs_type = {
     { &mp_type_type },
     .name = MP_QSTR_VfsFat,
     .make_new = fat_vfs_make_new,
+    .protocol = &fat_vfs_proto,
     .locals_dict = (mp_obj_dict_t*)&fat_vfs_locals_dict,
+
 };
 
 #endif // MICROPY_VFS_FAT

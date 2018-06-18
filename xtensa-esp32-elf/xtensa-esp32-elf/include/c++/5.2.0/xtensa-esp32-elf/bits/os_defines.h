@@ -34,7 +34,6 @@
 // file will come before all others.
 
 #ifdef __CYGWIN__
-#define _GLIBCXX_GTHREAD_USE_WEAK 0
 
 #if defined (_GLIBCXX_DLL)
 #define _GLIBCXX_PSEUDO_VISIBILITY_default __attribute__ ((__dllimport__))
@@ -54,5 +53,10 @@
 #define _GLIBCXX_THREAD_ATEXIT_WIN32 1
 
 #endif
+
+#define _GLIBCXX_GTHREAD_USE_WEAK 0
+#define _GTHREAD_USE_MUTEX_INIT_FUNC  1
+#define _GTHREAD_USE_COND_INIT_FUNC  1
+#define _GLIBCXX_USE_SCHED_YIELD      1
 
 #endif

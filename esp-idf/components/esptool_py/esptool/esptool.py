@@ -33,7 +33,7 @@ import zlib
 
 import serial
 
-__version__ = "2.2.1"
+__version__ = "2.3.1"
 
 MAX_UINT32 = 0xffffffff
 MAX_UINT24 = 0xffffff
@@ -98,6 +98,12 @@ if PYTHON2:
 else:
     def byte(bitstr, index):
         return bitstr[index]
+
+# Provide a 'basestring' class on Python 3
+try:
+    basestring
+except NameError:
+    basestring = str
 
 
 def esp8266_function_only(func):
@@ -183,7 +189,7 @@ class ESPLoader(object):
         with ones which throw NotImplementedInROMError().
 
         """
-        if isinstance(port, str):
+        if isinstance(port, basestring):
             self._port = serial.serial_for_url(port)
         else:
             self._port = port
@@ -885,6 +891,12 @@ class ESP8266ROM(ESPLoader):
         is_8285 = (efuses & ((1 << 4) | 1 << 80)) != 0  # One or the other efuse bit is set for ESP8285
         return "ESP8285" if is_8285 else "ESP8266EX"
 
+    def get_chip_features(self):
+        features = [ "WiFi" ]
+        if self.get_chip_description() == "ESP8285":
+            features += ["Embedded Flash"]
+        return features
+
     def flash_spi_attach(self, hspi_arg):
         if self.IS_STUB:
             super(ESP8266ROM, self).flash_spi_attach(hspi_arg)
@@ -991,13 +1003,14 @@ class ESP32ROM(ESPLoader):
     BOOTLOADER_FLASH_OFFSET = 0x1000
 
     def get_chip_description(self):
-        blk3 = self.read_efuse(3)
-        chip_version = (blk3 >> 12) & 0xF
-        pkg_version = (blk3 >> 9) & 0x07
+        word3 = self.read_efuse(3)
+        chip_version = (word3 >> 12) & 0xF
+        pkg_version = (word3 >> 9) & 0x07
 
         silicon_rev = {
-            0: "0",
-            8: "1"
+            0x0: "0",
+            0x8: "1",
+            0xc: "1",  # Silicon rev 1 w/ BLK3_PART_RESERVE bit set
         }.get(chip_version, "(unknown 0x%x)" % chip_version)
 
         chip_name = {
@@ -1008,6 +1021,29 @@ class ESP32ROM(ESPLoader):
         }.get(pkg_version, "unknown ESP32")
 
         return "%s (revision %s)" % (chip_name, silicon_rev)
+
+    def get_chip_features(self):
+        features = ["WiFi"]
+        word3 = self.read_efuse(3)
+
+        if word3 & (1 << 1) == 0:  # RD_CHIP_VER_DIS_BT
+            features += ["BT"]
+
+        if word3 & (1 << 0):  # RD_CHIP_VER_DIS_APP_CPU
+            features += ["Single Core"]
+        else:
+            features += ["Dual Core"]
+
+        pkg_version = (word3 >> 9) & 0x07
+        if pkg_version != 0:
+            features += ["Embedded Flash"]
+
+        word4 = self.read_efuse(4)
+        vref = (word4 >> 8) & 0x1F
+        if vref != 0:
+            features += ["VRef calibration in efuse"]
+
+        return features
 
     def read_efuse(self, n):
         """ Read the nth word of the ESP3x EFUSE region. """
@@ -2321,6 +2357,8 @@ def main():
 
         print("Chip is %s" % (esp.get_chip_description()))
 
+        print("Features: %s" % ", ".join(esp.get_chip_features()))
+
         if not args.no_stub:
             esp = esp.run_stub()
 
@@ -2350,7 +2388,7 @@ def main():
 
         # finish execution based on args.after
         if args.after == 'hard_reset':
-            print('Hard resetting...')
+            print('Hard resetting via RTS pin...')
             esp.hard_reset()
         elif args.after == 'soft_reset':
             print('Soft resetting...')

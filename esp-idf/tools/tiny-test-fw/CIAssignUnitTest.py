@@ -17,11 +17,18 @@ from Utility import CIAssignTest
 
 
 class Group(CIAssignTest.Group):
-    SORT_KEYS = ["Test App", "SDK", "test environment"]
+    SORT_KEYS = ["config", "SDK", "test environment", "multi_device", "multi_stage", "tags"]
     MAX_CASE = 30
     ATTR_CONVERT_TABLE = {
         "execution_time": "execution time"
     }
+    # when IDF support multiple chips, SDK will be moved into tags, we can remove it
+    CI_JOB_MATCH_KEYS = ["test environment", "SDK"]
+
+    def __init__(self, case):
+        super(Group, self).__init__(case)
+        for tag in self._get_case_attr(case, "tags"):
+            self.ci_job_match_keys.add(tag)
 
     @staticmethod
     def _get_case_attr(case, attr):
@@ -29,29 +36,44 @@ class Group(CIAssignTest.Group):
             attr = Group.ATTR_CONVERT_TABLE[attr]
         return case[attr]
 
-    @staticmethod
-    def _get_ut_config(test_app):
-        # we format test app "UT_ + config" when parsing test cases
-        # now we need to extract config
-        assert test_app[:3] == "UT_"
-        return test_app[3:]
-
-    def _create_extra_data(self):
+    def _create_extra_data(self, test_function):
+        """
+        For unit test case, we need to copy some attributes of test cases into config file.
+        So unit test function knows how to run the case.
+        """
         case_data = []
         for case in self.case_list:
-            if self._get_case_attr(case, "cmd set") == "multiple_devices_case":
-                case_data.append({
-                    "config": self._get_ut_config(self._get_case_attr(case, "Test App")),
-                    "name": self._get_case_attr(case, "summary"),
-                    "child case num": self._get_case_attr(case, "child case num")
-                })
-            else:
-                case_data.append({
-                    "config": self._get_ut_config(self._get_case_attr(case, "Test App")),
-                    "name": self._get_case_attr(case, "summary"),
-                    "reset": self._get_case_attr(case, "reset") ,
-                })
+            one_case_data = {
+                "config": self._get_case_attr(case, "config"),
+                "name": self._get_case_attr(case, "summary"),
+                "reset": self._get_case_attr(case, "reset"),
+                "timeout": self._get_case_attr(case, "timeout"),
+            }
+
+            if test_function in ["run_multiple_devices_cases", "run_multiple_stage_cases"]:
+                try:
+                    one_case_data["child case num"] = self._get_case_attr(case, "child case num")
+                except KeyError as e:
+                    print("multiple devices/stages cases must contains at least two test functions")
+                    print("case name: {}".format(one_case_data["name"]))
+                    raise e
+
+            case_data.append(one_case_data)
         return case_data
+
+    def _map_test_function(self):
+        """
+        determine which test function to use according to current test case
+
+        :return: test function name to use
+        """
+        if self.filters["multi_device"] == "Yes":
+            test_function = "run_multiple_devices_cases"
+        elif self.filters["multi_stage"] == "Yes":
+            test_function = "run_multiple_stage_cases"
+        else:
+            test_function = "run_unit_test_cases"
+        return test_function
 
     def output(self):
         """
@@ -59,12 +81,13 @@ class Group(CIAssignTest.Group):
 
         :return: {"Filter": case filter, "CaseConfig": list of case configs for cases in this group}
         """
+        test_function = self._map_test_function()
         output_data = {
             # we don't need filter for test function, as UT uses a few test functions for all cases
             "CaseConfig": [
                 {
-                    "name": self.case_list[0]["cmd set"] if isinstance(self.case_list[0]["cmd set"], str) else self.case_list[0]["cmd set"][0],
-                    "extra_data": self._create_extra_data(),
+                    "name": test_function,
+                    "extra_data": self._create_extra_data(test_function),
                 }
             ]
         }
@@ -77,8 +100,7 @@ class UnitTestAssignTest(CIAssignTest.AssignTest):
     def __init__(self, test_case_path, ci_config_file):
         CIAssignTest.AssignTest.__init__(self, test_case_path, ci_config_file, case_group=Group)
 
-    @staticmethod
-    def _search_cases(test_case_path, case_filter=None):
+    def _search_cases(self, test_case_path, case_filter=None):
         """
         For unit test case, we don't search for test functions.
         The unit test cases is stored in a yaml file which is created in job build-idf-test.
