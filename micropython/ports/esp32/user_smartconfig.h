@@ -1,7 +1,11 @@
 
-#define WIFI_AP_SSID "bit"
+#include <stdbool.h>
 
-#define SMART_CONFIG_KEY 27
+#define WIFI_AP_SSID "Bit"
 
-void config_default_wifi();
+#define SMART_CONFIG_KEY 35
+
+#define SMART_CONFIG_FILE "/spiffs/sta.cfg"
+
+bool config_default_wifi(void);
 
