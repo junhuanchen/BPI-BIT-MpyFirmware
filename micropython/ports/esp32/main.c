@@ -184,7 +184,7 @@ extern FATFS *mongoose_vfs;
 
 #include "user_smartconfig.h"
 
-#define SAFE_KEY 35
+#define SAFE_KEY 27 // 35
 
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
