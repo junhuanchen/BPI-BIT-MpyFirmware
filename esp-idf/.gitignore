@@ -53,3 +53,4 @@ coverage.info
 coverage_report/
 
 test_multi_heap_host
+/.git/
