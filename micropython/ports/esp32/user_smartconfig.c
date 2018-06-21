@@ -234,7 +234,6 @@ bool config_default_wifi(void)
             if(0 == gpio_get_level(SMART_CONFIG_KEY))
             {
                 smartconfig_mode = true;
-                printf("Enter SmartConfig Mode, Release Key To Exit.");
                 break;
             }
         }

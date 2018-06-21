@@ -250,20 +250,20 @@ soft_reset:
 
     bool safe_mode = false;
     gpio_set_direction(SAFE_KEY, GPIO_MODE_INPUT);
-    if(1 == gpio_get_level(SAFE_KEY))
+    if(0 == gpio_get_level(SAFE_KEY))
     {
-        for(uint8_t i = 0; i < 10; i++)
+        for(uint8_t i = 0; i < 15; i++)
         {
             vTaskDelay(100 / portTICK_PERIOD_MS);
-            if(0 == gpio_get_level(SAFE_KEY))
+            if(1 == gpio_get_level(SAFE_KEY))
             {
                 safe_mode = true;
-                printf("Enter Safe Mode, Release Press Key To Exit.\n");
+                printf("Enter Safe Mode, Press Key To Exit.\n");
                 break;
             }
         }
     }
-    while (safe_mode && 0 == gpio_get_level(SAFE_KEY))
+    while (safe_mode && 1 == gpio_get_level(SAFE_KEY))
     {
         mg_loop();
     }
