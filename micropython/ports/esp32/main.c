@@ -299,17 +299,33 @@ soft_reset:
 
 #include "soc/rtc.h"
 
+#include "mdns.h"
+
+extern char WIFI_AP_SSID[33];
+
 void app_main(void) {
     
     nvs_flash_init();
     
     rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
     
+    // WIFI_AP_SSID[2] = '1'; // changed wifi ap name
+    
     config_default_wifi();
     
     mg_init();
     
     xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, &mp_task_stack[0], &mp_task_tcb, tskNO_AFFINITY);
+    
+    vTaskDelay(3000 / portTICK_PERIOD_MS); // maybe to 5s not 3s
+    
+    //initialize mDNS
+    ESP_ERROR_CHECK( mdns_init() );
+    //set mDNS hostname (required if you want to advertise services)
+    ESP_ERROR_CHECK( mdns_hostname_set("bit") );
+    //initialize service
+    ESP_ERROR_CHECK( mdns_service_add("ESP32-BpiBit", "_http", "_tcp", 80, NULL, 0) );
+    
 }
 
 void nlr_jump_fail(void *val) {

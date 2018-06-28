@@ -16,6 +16,8 @@
 #include "tcpip_adapter.h"
 #include "esp_smartconfig.h"
 
+char WIFI_AP_SSID[32 + 1] = "bit";
+
 static wifi_config_t wifi_sta_config;
 
 static bool smartconfig_mode = false;
@@ -215,11 +217,8 @@ bool config_default_wifi(void)
     else
     {
         printf("default smartconfig config\n");
-        wifi_config_t wifi_config = {
-            .sta = {
-                .ssid = WIFI_AP_SSID
-            },
-        };
+        wifi_config_t wifi_config;
+        memcpy(wifi_config.sta.ssid, WIFI_AP_SSID, strlen(WIFI_AP_SSID));
         ESP_LOGI(TAG, "SSID:%s", WIFI_AP_SSID);
         ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
     }

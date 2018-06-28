@@ -96,6 +96,8 @@ INC_ESPCOMP += -I$(ESPCOMP)/pthread/include
 INC_ESPCOMP += -I$(ESPCOMP)/spiffs/include
 INC_ESPCOMP += -I$(ESPCOMP)/spiffs/spiffs/src
 INC_ESPCOMP += -I$(ESPCOMP)/smartconfig_ack/include
+INC_ESPCOMP += -I$(ESPCOMP)/mdns/include
+INC_ESPCOMP += -I$(ESPCOMP)/mdns/private_include
 
 # these flags are common to C and C++ compilation
 CFLAGS_COMMON = -Os -ffunction-sections -fdata-sections -fstrict-volatile-bitfields \
@@ -626,7 +628,13 @@ ESPIDF_SPIFFS_O = $(addprefix $(ESPCOMP)/spiffs/,\
 	spiffs/src/spiffs_check.o \
 	)
 
+ESPIDF_MDNS_O = $(addprefix $(ESPCOMP)/mdns/,\
+	mdns.o \
+	mdns_networking.o \
+	)
+
 OBJ_ESPIDF =
+OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_MDNS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_SPIFFS_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_NEWLIB_O))
 OBJ_ESPIDF += $(addprefix $(BUILD)/, $(ESPIDF_DRIVER_O))
