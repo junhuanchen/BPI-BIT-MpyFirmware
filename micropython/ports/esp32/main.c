@@ -320,11 +320,11 @@ void app_main(void) {
     vTaskDelay(3000 / portTICK_PERIOD_MS); // maybe to 5s not 3s
     
     //initialize mDNS
-    ESP_ERROR_CHECK( mdns_init() );
+    while(ESP_OK != mdns_init());
     //set mDNS hostname (required if you want to advertise services)
-    ESP_ERROR_CHECK( mdns_hostname_set("bit") );
+    while(ESP_OK != mdns_hostname_set("bit"));
     //initialize service
-    ESP_ERROR_CHECK( mdns_service_add("ESP32-BpiBit", "_http", "_tcp", 80, NULL, 0) );
+    while(ESP_OK != mdns_service_add("ESP32-BpiBit", "_http", "_tcp", 80, NULL, 0));
     
 }
 
