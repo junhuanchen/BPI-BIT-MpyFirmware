@@ -235,7 +235,7 @@ soft_reset:
     //     pyexec_file("main.py");
     // }
 
-    
+
     // test_fat();
     
     const char * path = "/flashbdev";
@@ -303,13 +303,26 @@ soft_reset:
 
 extern char WIFI_AP_SSID[33];
 
+#include "bpibit.h"
+
 void app_main(void) {
     
     nvs_flash_init();
     
     rtc_clk_cpu_freq_set(RTC_CPU_FREQ_80M);
     
-    // WIFI_AP_SSID[2] = '1'; // changed wifi ap name
+    uint8_t mac[6];
+    if(ESP_OK == esp_efuse_mac_get_default(mac))
+    {
+        uint16_t name = 0;
+        memcpy(&name, &mac[4], sizeof(name));
+        sprintf(WIFI_AP_SSID + 3, "%04hx", name);
+    }
+    else
+    {
+        puts("esp_efuse_mac_get_default error! need to reset chipid.");
+        return;
+    }
     
     config_default_wifi();
     
@@ -317,14 +330,20 @@ void app_main(void) {
     
     xTaskCreateStaticPinnedToCore(mp_task, "mp_task", MP_TASK_STACK_LEN, NULL, MP_TASK_PRIORITY, &mp_task_stack[0], &mp_task_tcb, tskNO_AFFINITY);
     
-    vTaskDelay(3000 / portTICK_PERIOD_MS); // maybe to 5s not 3s
+    // vTaskDelay(3000 / portTICK_PERIOD_MS); // maybe to 5s not 3s
+    
+    {
+        uint8_t result[4] = { mac[5] >> 4, mac[5] & 15, mac[4] >> 4, mac[4] & 15,  };
+        
+        BitRunView(result);
+    }
     
     //initialize mDNS
     while(ESP_OK != mdns_init());
     //set mDNS hostname (required if you want to advertise services)
-    while(ESP_OK != mdns_hostname_set("bit"));
+    while(ESP_OK != mdns_hostname_set(WIFI_AP_SSID));
     //initialize service
-    while(ESP_OK != mdns_service_add("ESP32-BpiBit", "_http", "_tcp", 80, NULL, 0));
+    while(ESP_OK != mdns_service_add(WIFI_AP_SSID, "_http", "_tcp", 80, NULL, 0));
     
 }
 
