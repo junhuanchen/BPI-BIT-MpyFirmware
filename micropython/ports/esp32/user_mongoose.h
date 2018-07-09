@@ -136,6 +136,6 @@ void mg_init()
 
 void mg_loop()
 {
-    mg_mgr_poll(&mgr_dns, 10);
-    mg_mgr_poll(&mgr_http, 150);
+    mg_mgr_poll(&mgr_dns, 20);
+    mg_mgr_poll(&mgr_http, 200);
 }
