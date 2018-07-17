@@ -49,7 +49,7 @@ inline void BitShowName(uint8_t buf[], uint8_t len)
 
         Color[0] = Temp;
         
-        vTaskDelay(75 / portTICK_PERIOD_MS);
+        vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 }
 
@@ -73,6 +73,6 @@ inline void BitRunView(uint8_t data[])
     uint8_t result[5 * 5] = { 0 };
     for(int i = 0; i < 4; i++) FillView(result, i, ViewLib[data[i]]);
     BitShowName(result, sizeof(result));
-    BitLedExit();
+    // BitLedExit();
 }
 
